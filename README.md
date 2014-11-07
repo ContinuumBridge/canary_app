@@ -7,11 +7,11 @@ Message formats are as follows:
 
 Messages from the app:
 
-{
-    "source": "string: Bridge ID/App ID",
-    "destination": "string: Client ID",
-    "body": {)
-}
+    {
+        "source": "string: Bridge ID/App ID",
+        "destination": "string: Client ID",
+        "body": {)
+    }
 
 An example of a source is BID254/AID11, which is app ID 11 on bridge ID 254. App IDs are always the same for a particular app.
 
@@ -21,17 +21,17 @@ Messages are routed by the ContinuumBridge bridge controller between the bridges
 
 The body is as follows:
 
-{
-    "s": <integer: sequence number>,
-    "d" [
-          {
-            "i": "string: device ID",
-            "c": "string: characteristic",
-            "v": "value",
-            "t": "integer: timestamp
-          }
-        ]
-}
+    {
+        "s": <integer: sequence number>,
+        "d" [
+                {
+                    "i": "string: device ID",
+                    "c": "string: characteristic",
+                    "v": "value",
+                    "t": "integer: timestamp
+                }
+            ]
+    }
 
 The keys have the following meanings:
 
@@ -52,11 +52,11 @@ For devices that have more than one binary sensor (switch), the sensors are labe
 
 Messages that originate from the client:
 
-{
-    "source": "string: Client ID",
-    "destination": "string: Bridge ID/Client ID",
-    "body": {)
-}
+    {
+        "source": "string: Client ID",
+        "destination": "string: Bridge ID/Client ID",
+        "body": {)
+    }
 
 The IDs are as defined above.
 
