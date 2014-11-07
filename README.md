@@ -60,6 +60,49 @@ Messages that originate from the client:
 
 The IDs are as defined above.
 
-The body can be one of the following:
+The body is as described below:
 
+    {
+        "s": <integer: sequence number>,
+        "d" [
+                {
+                    "i": "string: device ID",
+                    "c": "string: characteristic",
+                    "v": "value",
+                    "t": <integer: time>
+                }
+            ]
+    } 
+
+The difference between this and the message from the app is that the time is not a timestamp that indicates when the message was sent; it is a time that indicates when the app should action the message. The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time t. To turn on a heater controller called "control":
+
+    {
+        "s": 11,
+        "d" [
+                {
+                    "i": "control",
+                    "c": "s"",
+                    "v": 1,
+                    "t": 1415402453
+                }
+            ]
+    } 
+    
+A mechanism is provided to acknowledge messages going in both directions. The header is as previously described and the body is as follows:
+
+    {
+        "a": <interger, acknowldge number>
+    } 
+
+The acknowledge field may also be included with another message, at the same level as the sequence number.
+
+The sequence/acknowldge protocol works in a similar manner to TCP. An acknowledge number of N indicates that the next message that the receiver expects to receive is message N. Here is an example:
+
+    AID -> CID  s=0     App sends first message
+    AID -> CID  s=1     App sends second message
+    CID -> AID  a=2     Client indicates it has received both messages
+
+If the sender infers that a message has not been received, it should send it again. The app will keep data for a maximum of six hours before discarding it. In addition, the app does not attempt to send messages if it has been notified by the bridge manager that the connection is down. 
+
+If either side sends a message with a sequence number of 0, any stored data will be discarded and the process restarted.
 
