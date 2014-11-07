@@ -35,18 +35,18 @@ The body is as follows:
 
 The keys have the following meanings:
 
-s  A sequence number that is incremented each time a message is sent. It is used to acknowledge the message.
-d  An array of data. It may contain one or more elements.
-i  The ID of the device that the data is from.
-c  The characteristic, defined as follows:
-   t  Temperature in degrees Celcius.
-   h  Humidity in percent.
-   l  Luminance n Lux.
-   bn Binary sensor: 0 or 1. 0 is off and 1 is on.
-   bt Battery status, percent.
-   c  Connected: 0 or 1 to indicate whether the device is connected.
-v  The value of the characteristic. 
-t  Timestamp in seconds (Epoch time).
+    s  A sequence number that is incremented each time a message is sent. It is used to acknowledge the message.
+    d  An array of data. It may contain one or more elements.
+    i  The ID of the device that the data is from.
+    c  The characteristic, defined as follows:
+        t  Temperature in degrees Celcius.
+        h  Humidity in percent.
+        l  Luminance n Lux.
+        bn Binary sensor: 0 or 1. 0 is off and 1 is on.
+        bt Battery status, percent.
+        c  Connected: 0 or 1 to indicate whether the device is connected.
+    v  The value of the characteristic. 
+    t  Timestamp in seconds (Epoch time).
 
 For devices that have more than one binary sensor (switch), the sensors are labelled b0 to bn-1, where n is the number of sensors.
 
