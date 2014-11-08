@@ -10,7 +10,7 @@ Messages from the app:
     {
         "source": "string: Bridge ID/App ID",
         "destination": "string: Client ID",
-        "body": {)
+        "body": {}
     }
 
 An example of a source is BID254/AID11, which is app ID 11 on bridge ID 254. App IDs are always the same for a particular app.
@@ -23,30 +23,34 @@ The body is as follows:
 
     {
         "s": <integer: sequence number>,
-        "d" [
+        "a": <integer: acknowledge number (optional)>
+        "d":
+            [
                 {
                     "i": "string: device ID",
                     "c": "string: characteristic",
-                    "v": "value",
-                    "t": "integer: timestamp
+                    "v": <value>,
+                    "t": <integer: timestamp>
                 }
             ]
     }
 
 The keys have the following meanings:
 
-    s  A sequence number that is incremented each time a message is sent. It is used to acknowledge the message.
-    d  An array of data. It may contain one or more elements.
-    i  The ID of the device that the data is from.
-    c  The characteristic, defined as follows:
-        t  Temperature in degrees Celcius.
-        h  Humidity in percent.
-        l  Luminance n Lux.
-        bn Binary sensor: 0 or 1. 0 is off and 1 is on.
-        bt Battery status, percent.
-        c  Connected: 0 or 1 to indicate whether the device is connected.
+    s   Sequence number, described below.
+    a   Acknowldge number, described below.
+    i   The ID of the device that the data is from.
+    c   The characteristic, defined as follows:
+            t  Temperature in degrees Celcius.
+            h  Humidity in percent.
+            l  Luminance n Lux.
+            bn Binary sensor: 0 or 1. 0 is off and 1 is on.
+            bt Battery status, percent.
+            c  Connected: 0 or 1 to indicate whether the device is connected.
     v  The value of the characteristic. 
     t  Timestamp in seconds (Epoch time).
+    
+The message body array may contain one or more samples.
 
 For devices that have more than one binary sensor (switch), the sensors are labelled b0 to bn-1, where n is the number of sensors.
 
@@ -55,7 +59,7 @@ Messages that originate from the client:
     {
         "source": "string: Client ID",
         "destination": "string: Bridge ID/Client ID",
-        "body": {)
+        "body": {}
     }
 
 The IDs are as defined above.
@@ -64,39 +68,46 @@ The body is as described below:
 
     {
         "s": <integer: sequence number>,
-        "d" [
+        "a": <integer: acknowledge number (optional)>
+        "d":
+            [
                 {
                     "i": "string: device ID",
                     "c": "string: characteristic",
                     "v": "value",
-                    "t": <integer: time>
+                    "at":<integer: time at which to action the value>,
+                    "t": <integer: timestamp
                 }
             ]
-    } 
+    }
 
-The difference between this and the message from the app is that the time is not a timestamp that indicates when the message was sent; it is a time that indicates when the app should action the message. The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time t. To turn on a heater controller called "control":
+The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time "at". To turn on a heater controller called "control":
 
-    {
-        "s": 11,
-        "d" [
-                {
-                    "i": "control",
-                    "c": "s"",
-                    "v": 1,
-                    "t": 1415402453
-                }
-            ]
-    } 
+    [
+        {
+            "i": "control",
+            "c": "s"",
+            "v": 1,
+            "at": 1415403502
+            "t": 1415402453
+        }
+    ]
     
-A mechanism is provided to acknowledge messages going in both directions. The header is as previously described and the body is as follows:
+A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. An acknowledge message may then be sent back
 
     {
-        "a": <interger, acknowldge number>
-    } 
+        "source": "string",
+        "destination": "string",
+        "body": 
+            {
+                "s": <integer: sequence number>,
+                "a": <integer: acknowledge number>
+            }
+    }
 
-The acknowledge field may also be included with another message, at the same level as the sequence number.
+The acknowledge field may also be included with another message, as described above.
 
-The sequence/acknowldge protocol works in a similar manner to TCP. An acknowledge number of N indicates that the next message that the receiver expects to receive is message N. Here is an example:
+The acknowledge number indicates the next sequence number that the receiver is expecting. Eg:
 
     AID -> CID  s=0     App sends first message
     AID -> CID  s=1     App sends second message
