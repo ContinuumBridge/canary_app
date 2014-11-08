@@ -75,25 +75,23 @@ The body is as described below:
                     "i": "string: device ID",
                     "c": "string: characteristic",
                     "v": "value",
-                    "at":<integer: time at which to action the value>,
-                    "t": <integer: timestamp
+                    "at":<integer: time at which to action the value>
                 }
             ]
     }
 
-The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time "at". To turn on a heater controller called "control":
+The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time "at". To turn on a heater controller called "controller":
 
     [
         {
-            "i": "control",
+            "i": "controller",
             "c": "s"",
             "v": 1,
             "at": 1415403502
-            "t": 1415402453
         }
     ]
     
-A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. An acknowledge message may then be sent back
+A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. An acknowledge message may then be sent back.
 
     {
         "source": "string",
@@ -113,7 +111,7 @@ The acknowledge number indicates the next sequence number that the receiver is e
     AID -> CID  s=1     App sends second message
     CID -> AID  a=2     Client indicates it has received both messages
 
-If the sender infers that a message has not been received, it should send it again. The app will keep data for a maximum of six hours before discarding it. In addition, the app does not attempt to send messages if it has been notified by the bridge manager that the connection is down. 
+If the sender infers that a message has not been received, it should send it again. The app will keep data for a maximum of six hours before discarding it. The app does not attempt to send messages if it has been notified by the bridge manager that the connection is down. 
 
 If either side sends a message with a sequence number of 0, any stored data will be discarded and the process restarted.
 
