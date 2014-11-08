@@ -55,14 +55,6 @@ For devices that have more than one binary sensor (switch), the sensors are labe
 
 Here is an example of the body of a message from an app. 
 
-* The sequence number is 117. 
-* There is no acknowledgement of any messages from the client. 
-* It contains data from a device called "Sensor": 
-    * a temperature reading of 18.5 deg C,
-    * a humidity of 59.5%.
-* The time at which the sensor readings were taken is 1415203274.
-
-
     {
         "n": 117,
         "d":
@@ -75,6 +67,13 @@ Here is an example of the body of a message from an app.
                 }
             ]
     }
+    
+* The sequence number is 117. 
+* There is no acknowledgement of any messages from the client. 
+* It contains data from a device called "Sensor": 
+    * a temperature reading of 18.5 deg C,
+    * a humidity of 59.5%.
+* The time at which the sensor readings were taken is 1415203274.
 
 Messages that originate from the client:
 
