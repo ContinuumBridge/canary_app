@@ -49,7 +49,7 @@ The keys have the following meanings:
     v  The value of the characteristic. 
     s  Timestamp in seconds (Epoch time).
     
-The message body array may contain one or more samples.
+The message body array may contain one or more samples. Note that the all fields in the body except the sequence number field are optional and upon connection or reconnection the app will send a message to the client that only contains the sequence number in the body. Once the client has acknowledged this, the app will then be able to send samples.
 
 For devices that have more than one binary sensor (switch), the sensors are labelled b0 to bn-1, where n is the number of sensors.
 
