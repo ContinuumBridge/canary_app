@@ -62,6 +62,7 @@ Here is an example of the body of a message from an app.
     * a humidity of 59.5%.
 * The time at which the sensor readings were taken is 1415203274.
 
+
     {
         "n": 117,
         "d":
