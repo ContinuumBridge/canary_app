@@ -17,8 +17,9 @@ import requests
 import json
 from twisted.internet import reactor
 
-CID                      = "CID1"
 SEND_DELAY               = 10  # Time to gather values before sending them
+SEQFILE                  = CB_CONFIG_DIR + "canary_app.seq"
+STOREFILE                = CB_CONFIG_DIR + "canary_app.store"
 
 # Default values:
 config = {
@@ -32,17 +33,16 @@ config = {
     'battery': 'True',
     'battery_min_change': 1.0,
     'connected': 'True',
-    'slow_polling_interval': 600.0
+    'slow_polling_interval': 600.0,
     'cid': 'XX'
 }
 
 class DataManager:
     """ Managers data storage for all sensors """
-    def __init__(self, aid, cid):
+    def __init__(self, aid):
         self.waiting = False
         self.aid = aid
         self.seq = 0
-        CID = cid
         self.store = [] 
         self.connected = False
         self.endToEnd = False
@@ -53,13 +53,13 @@ class DataManager:
         else:
             try:
                 with open(SEQFILE, 'r') as f:
-                    self.seq = f.read()
-                    self.seq +=
+                    self.seq = int(f.read())
+                    self.seq += 1
             except:
                 self.seq = 0
                 logging.warning('%s getseq. Could not open SEQFILE', ModuleName)
-        with open(SEQFILE, 'r') as f:
-            f.write(seq)
+        with open(SEQFILE, 'w') as f:
+            f.write(str(self.seq))
         return self.seq
 
     def manageConnect(self, connected):
@@ -67,8 +67,8 @@ class DataManager:
         if connected == True:
             msg = {
                    "source": self.aid,
-                   "destination": CID,
-                   "body": {"n":getseq()} 
+                   "destination": config["cid"],
+                   "body": {"n":self.getseq()} 
                   }
             self.sendMessage(msg, "conc")
         else:
@@ -94,7 +94,7 @@ class DataManager:
             logging.warning('%s sendValue. Could not open %s', ModuleName, STOREFILE)
         msg = {
                "source": self.aid,
-               "destination": CID,
+               "destination": config["cid"],
                "body": body,
               }
         self.sendMessage(msg, "conc")
@@ -110,7 +110,7 @@ class DataManager:
             if s["s"] < self.seq:
                 store.remove(s)
         try:
-            with open(storeFile, 'w') as f:
+            with open(STOREfILE, 'w') as f:
                 json.dump(store, f)
         except:
             logging.warning('%s storeValue. Could not write store to file', ModuleName)
@@ -250,7 +250,7 @@ class App(CbApp):
 
 
     def onConcMessage(self, msg):
-        logging.debug("%s resp from conc: %s", ModuleName, resp)
+        logging.debug("%s message from conc: %s", ModuleName, msg)
         if "resp" in msg:
             self.concConnected = True
             if self.bridgeConnected:
@@ -370,15 +370,15 @@ class App(CbApp):
                 self.idToName[adtID] = friendly_name.replace(" ", "_")
                 self.devices.append(adtID)
         self.dm = DataManager(self.bridge_id)
+        self.dm.sendMessage = self.sendMessage
         self.setState("starting")
 
-    def onManagerStatus(self, status):
-        if status == "connected":
-            self.bridgeConnected = True
+    def onManagerStatus(self, connected):
+        self.bridgeConnected = connected
+        if connected:
             if self.concConnected:
                 self.dm.manageConnect(True)
-        elif status == "disconnected":
-            self.bridgeConnected = False
+        else:
             self.dm.manageConnect(False)
 
 if __name__ == '__main__':
