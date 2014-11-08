@@ -22,22 +22,21 @@ Messages are routed by the ContinuumBridge bridge controller between the bridges
 The body is as follows:
 
     {
-        "s": <integer: sequence number>,
-        "a": <integer: acknowledge number (optional)>
+        "n": <integer: sequence number>,
+        "a": <integer: acknowledge number (optional)>,
         "d":
             [
                 {
                     "i": "string: device ID",
-                    "c": "string: characteristic",
-                    "v": <value>,
-                    "t": <integer: timestamp>
+                    <c>: <v>,
+                    "s": <integer: timestamp>
                 }
             ]
     }
 
 The keys have the following meanings:
 
-    s   Sequence number, described below.
+    n   Sequence number, described below.
     a   Acknowldge number, described below.
     i   The ID of the device that the data is from.
     c   The characteristic, defined as follows:
@@ -48,11 +47,33 @@ The keys have the following meanings:
             bt Battery status, percent.
             c  Connected: 0 or 1 to indicate whether the device is connected.
     v  The value of the characteristic. 
-    t  Timestamp in seconds (Epoch time).
+    s  Timestamp in seconds (Epoch time).
     
 The message body array may contain one or more samples.
 
 For devices that have more than one binary sensor (switch), the sensors are labelled b0 to bn-1, where n is the number of sensors.
+
+Here is an example of the body of a message from an app. 
+
+* The sequence number is 117. 
+* There is no acknowledgement of any messages from the client. 
+* It contains data from a device called "Sensor": 
+    * a temperature reading of 18.5 deg C,
+    * a humidity of 59.5%.
+* The time at which the sensor readings were taken is 1415203274.
+
+    {
+        "n": 117,
+        "d":
+            [
+                {
+                    "i": "Sensor",
+                    "t": 18.5,
+                    "h": 59.5,
+                    "s": 1415203274
+                }
+            ]
+    }
 
 Messages that originate from the client:
 
@@ -67,29 +88,37 @@ The IDs are as defined above.
 The body is as described below:
 
     {
-        "s": <integer: sequence number>,
-        "a": <integer: acknowledge number (optional)>
+        "n": <integer: sequence number>,
+        "a": <integer: acknowledge number (optional)>,
         "d":
             [
                 {
                     "i": "string: device ID",
-                    "c": "string: characteristic",
-                    "v": "value",
+                    <c>: <v>,
                     "at":<integer: time at which to action the value>
                 }
             ]
     }
 
-The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time "at". To turn on a heater controller called "controller":
+The device ID is the ID of the device whose characteristic should be changed and the value is the value it shouild be changed to at time "at". The following message body turns on a device called "Controller" at time 1415403000 and turns it off again at time 1415404000. The sequence number is 19 and the message also contains an acknowledgement, a (see below):
 
-    [
-        {
-            "i": "controller",
-            "c": "s"",
-            "v": 1,
-            "at": 1415403502
-        }
-    ]
+    {
+        "n": 19,
+        "a": 118,
+        "d":
+            [
+                {
+                    "i": "Controller",
+                    "s": 1,
+                    "at": 1415403000
+                },
+                {
+                    "i": "Controller",
+                    "s": 0,
+                    "at": 1415404000
+                }            
+            ]
+    }
     
 A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. An acknowledge message may then be sent back.
 
