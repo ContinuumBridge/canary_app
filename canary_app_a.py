@@ -34,7 +34,7 @@ config = {
     'battery_min_change': 1.0,
     'connected': 'True',
     'slow_polling_interval': 600.0,
-    'cid': 'XX'
+    'cid': 'CID1'
 }
 
 class DataManager:
@@ -71,6 +71,7 @@ class DataManager:
                    "body": {"n":self.getseq()} 
                   }
             self.sendMessage(msg, "conc")
+            logging.debug('%s sendValues. Sending: %s', ModuleName, msg)
         else:
             self.endToEnd = False
 
@@ -80,23 +81,25 @@ class DataManager:
                 "n": self.seq,
                 "d": self.store
                }
-        del self.store
+        self.store = []
         try:
             with open(STOREFILE, 'r') as f:
                 store = json.load(f)
         except:
-            logging.warning('%s sendValue. Could not open %s', ModuleName, STOREFILE)
+            store = []
+            logging.debug('%s sendValue. Could not open %s for read', ModuleName, STOREFILE)
         store.append(body)
         try:
             with open(STOREFILE, 'w') as f:
                 json.dump(store, f)
         except:
-            logging.warning('%s sendValue. Could not open %s', ModuleName, STOREFILE)
+            logging.warning('%s sendValue. Could not open %s for write', ModuleName, STOREFILE)
         msg = {
                "source": self.aid,
                "destination": config["cid"],
                "body": body,
               }
+        logging.debug('%s sendValues. Sending: %s', ModuleName, msg)
         self.sendMessage(msg, "conc")
 
     def processAck(self, ack):
@@ -129,10 +132,9 @@ class TemperatureMeasure():
         self.prevTemp = -100
 
     def process(self, message):
-        timeStamp = message["timeStamp"] 
+        timeStamp = int(message["timeStamp"])
         temp = message["data"]
         if abs(temp-self.prevTemp) >= config["temp_min_change"]:
-            self.dm.storeTemp(self.id, timeStamp, temp) 
             self.prevTemp = temp
             self.dm.storeValues({"i": self.id, "t":temp, "s":timeStamp})
 
@@ -144,7 +146,7 @@ class Humid():
 
     def process(self, message):
         h = message["data"]
-        timeStamp = message["timeStamp"] 
+        timeStamp = int(message["timeStamp"])
         if abs(h-self.previous) >= config["humidity_min_change"]:
             self.dm.storeValues({"i": self.id, "h":h, "s":timeStamp})
             self.previous = h
@@ -155,7 +157,7 @@ class Binary():
         self.previous = 0
 
     def process(self, message):
-        timeStamp = message["timeStamp"] 
+        timeStamp = int(message["timeStamp"])
         b = message["data"]
         if b == "on":
             bi = 1
@@ -172,7 +174,7 @@ class Luminance():
 
     def process(self, message):
         v = message["data"]
-        timeStamp = message["timeStamp"] 
+        timeStamp = int(message["timeStamp"])
         if abs(v-self.previous) >= config["luminance_min_change"]:
             self.dm.storeValues({"i": self.id, "l":v, "s":timeStamp})
             self.previous = v
@@ -184,7 +186,7 @@ class Battery():
 
     def process(self, message):
         v = message["data"]
-        timeStamp = message["timeStamp"] 
+        timeStamp = int(message["timeStamp"])
         if abs(v-self.previous) >= config["battery_min_change"]:
             self.dm.storeValues({"i": self.id, "bt":v, "s":timeStamp})
             self.previous = v
@@ -369,7 +371,7 @@ class App(CbApp):
                 logging.debug("%s Configure app. Adaptor name: %s", ModuleName, name)
                 self.idToName[adtID] = friendly_name.replace(" ", "_")
                 self.devices.append(adtID)
-        self.dm = DataManager(self.bridge_id)
+        self.dm = DataManager(self.id)
         self.dm.sendMessage = self.sendMessage
         self.setState("starting")
 
