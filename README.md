@@ -40,12 +40,13 @@ The keys have the following meanings:
     a   Acknowldge number, described below.
     i   The ID of the device that the data is from.
     c   The characteristic, defined as follows:
-            t  Temperature in degrees Celcius.
-            h  Humidity in percent.
-            l  Luminance n Lux.
-            bn Binary sensor: 0 or 1. 0 is off and 1 is on.
-            bt Battery status, percent.
-            c  Connected: 0 or 1 to indicate whether the device is connected.
+            t       Temperature in degrees Celcius.
+            h       Humidity in percent.
+            l       Luminance in Lux.
+            b       Binary sensor. 0 is off and 1 is on.
+            bn      Button state. n is 0 or 1. State: 0 is off and 1 is on.
+            battery Battery status, percent.
+            c       Connected: 0 or 1 to indicate whether the device is connected.
     v  The value of the characteristic. 
     s  Timestamp in seconds (Epoch time).
     
