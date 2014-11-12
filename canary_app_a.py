@@ -85,7 +85,7 @@ class DataManager:
     def sendValues(self):
         self.waiting = False
         body = {
-                "n": self.seq,
+                "n": self.getseq()
                 "d": self.store
                }
         self.store = []
