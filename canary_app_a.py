@@ -35,7 +35,7 @@ config = {
     'battery_min_change': 1.0,
     'connected': 'True',
     'slow_polling_interval': 600.0,
-    'cid': 'CID1'
+    'cid': 'CID52'
 }
 
 def state2int(s):
@@ -85,7 +85,7 @@ class DataManager:
     def sendValues(self):
         self.waiting = False
         body = {
-                "n": self.getseq()
+                "n": self.getseq(),
                 "d": self.store
                }
         self.store = []
@@ -282,14 +282,22 @@ class App(CbApp):
                         switchTimes = json.load(f)
                 except:
                     switchTimes = []
-                switchTimes.append({msg["body"]["s"]: msg["body"]["at"]})
+                try:
+                    switchTimes.append({msg["body"]["s"]: msg["body"]["at"]})
+                except Exception as inst:
+                    logging.warning("%s Unexpected message body: %s", ModuleName, msg)
+                    logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
                 try:
                     with open(switchFile, 'w') as f:
                         json.dump(switchTimes, f)
                 except:
                     logging.warning('%s onConcMessage. Could not write switchTimes to file', ModuleName)
-            if "a" in msg["body"]:
-                self.dm.processAck(msg["body"]["a"])
+            try: 
+                if "a" in msg["body"]:
+                    self.dm.processAck(msg["body"]["a"])
+            except Exception as inst:
+                logging.warning("%s Unexpected message body: %s", ModuleName, msg)
+                logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
         else: 
             logging.debug('%s onConcMessage. No body in message: %s', ModuleName, msg)
 
