@@ -28,6 +28,7 @@ config = {
     'humidity': 'True',
     'humidity_min_change': 0.2,
     'binary': 'True',
+    'buttons': 'True',
     'luminance': 'True',
     'luminance_min_change': 1.0,
     'battery': 'True',
@@ -36,6 +37,12 @@ config = {
     'slow_polling_interval': 600.0,
     'cid': 'CID1'
 }
+
+def state2int(s):
+    if s == "on":
+        return 1
+    else:
+        return 0
 
 class DataManager:
     """ Managers data storage for all sensors """
@@ -159,13 +166,22 @@ class Binary():
     def process(self, message):
         timeStamp = int(message["timeStamp"])
         b = message["data"]
-        if b == "on":
-            bi = 1
-        else:
-            bi = 0
+        bi = state2int(b)
         if bi != self.previous:
             self.dm.storeValues({"i": self.id, "b":bi, "s":timeStamp})
             self.previous = bi
+
+class Buttons():
+    def __init__(self, id):
+        self.id = id
+
+    def process(self, message):
+        timeStamp = int(message["timeStamp"])
+        logging.debug('%s buttons data: %s', ModuleName, message["data"])
+        for key, value in message["data"].iteritems():
+            val = state2int(value)
+            logging.debug('%s buttons key: %s, val: %s %s', ModuleName, key, value, str(val))
+            self.dm.storeValues({"i": self.id, ('b'+key):val, "s":timeStamp})
 
 class Luminance():
     def __init__(self, id):
@@ -231,6 +247,7 @@ class App(CbApp):
         self.temp = []
         self.humidity = []
         self.binary = []
+        self.buttons = []
         self.luminance = []
         self.battery = []
         self.connected = []
@@ -297,6 +314,11 @@ class App(CbApp):
                 if b.id == self.idToName[message["id"]]:
                     b.process(message)
                     break
+        elif message["characteristic"] == "buttons":
+            for b in self.buttons:
+                if b.id == self.idToName[message["id"]]:
+                    b.process(message)
+                    break
         elif message["characteristic"] == "battery":
             for b in self.battery:
                 if b.id == self.idToName[message["id"]]:
@@ -314,7 +336,7 @@ class App(CbApp):
                     break
 
     def onAdaptorService(self, message):
-        #logging.debug("%s onAdaptorService, message: %s", ModuleName, message)
+        logging.debug("%s onAdaptorService, message: %s", ModuleName, message)
         serviceReq = []
         for p in message["service"]:
             # Based on services offered & whether we want to enable them
@@ -335,6 +357,12 @@ class App(CbApp):
                     self.binary.append(Binary(self.idToName[message["id"]]))
                     self.binary[-1].dm = self.dm
                     serviceReq.append({"characteristic": "binary_sensor",
+                                       "interval": 0})
+            elif p["characteristic"] == "buttons":
+                if config["buttons"] == 'True':
+                    self.buttons.append(Buttons(self.idToName[message["id"]]))
+                    self.buttons[-1].dm = self.dm
+                    serviceReq.append({"characteristic": "buttons",
                                        "interval": 0})
             elif p["characteristic"] == "battery":
                 if config["battery"] == 'True':
