@@ -121,7 +121,7 @@ The device ID is the ID of the device whose characteristic should be changed and
             ]
     }
     
-A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. An acknowledge message may then be sent back.
+A mechanism is provided to acknowledge messages going in either directions. Each time a message is sent, it contains a sequence number that is incremented by 1. The receiver acknowledges messages by sending a message with an acknowledge number equal to the sequence number of the next message that it expects.  
 
     {
         "source": "string",
@@ -141,7 +141,7 @@ The acknowledge number indicates the next sequence number that the receiver is e
     AID -> CID  s=1     App sends second message
     CID -> AID  a=2     Client indicates it has received both messages
 
-If the sender infers that a message has not been received, it should send it again. The app will keep data for a maximum of six hours before discarding it. The app does not attempt to send messages if it has been notified by the bridge manager that the connection is down. 
+An acknowledge must be sent after every N messages that are received. The sender will not attempt to send any more messages if it does not receive an acknowledgement after it has sent N messages. By default, N is set to 10 for messages sent by the app and 1 to messages received by the app. This is because the app may receive infrequent control messages. The app will keep data for a maximum of six hours before discarding it. The app does not attempt to send messages if it has been notified by the bridge manager that the connection is down. If a receiver determines or suspects that it has not been receiving messages it should resend a message acknowledging the last message that it has received when it believes the link has been reestablished. 
 
 If either side sends a message with a sequence number of 0, any stored data will be discarded and the process restarted.
 
