@@ -177,10 +177,10 @@ class Buttons():
 
     def process(self, message):
         timeStamp = int(message["timeStamp"])
-        logging.debug('%s buttons data: %s', ModuleName, message["data"])
+        #logging.debug('%s buttons data: %s', ModuleName, message["data"])
         for key, value in message["data"].iteritems():
             val = state2int(value)
-            logging.debug('%s buttons key: %s, val: %s %s', ModuleName, key, value, str(val))
+            #logging.debug('%s buttons key: %s, val: %s %s', ModuleName, key, value, str(val))
             self.dm.storeValues({"i": self.id, ('b'+key):val, "s":timeStamp})
 
 class Luminance():
@@ -322,7 +322,7 @@ class App(CbApp):
                 if b.id == self.idToName[message["id"]]:
                     b.process(message)
                     break
-        elif message["characteristic"] == "buttons":
+        elif message["characteristic"] == "number_buttons":
             for b in self.buttons:
                 if b.id == self.idToName[message["id"]]:
                     b.process(message)
@@ -366,11 +366,11 @@ class App(CbApp):
                     self.binary[-1].dm = self.dm
                     serviceReq.append({"characteristic": "binary_sensor",
                                        "interval": 0})
-            elif p["characteristic"] == "buttons":
+            elif p["characteristic"] == "number_buttons":
                 if config["buttons"] == 'True':
                     self.buttons.append(Buttons(self.idToName[message["id"]]))
                     self.buttons[-1].dm = self.dm
-                    serviceReq.append({"characteristic": "buttons",
+                    serviceReq.append({"characteristic": "number_buttons",
                                        "interval": 0})
             elif p["characteristic"] == "battery":
                 if config["battery"] == 'True':
