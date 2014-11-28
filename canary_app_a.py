@@ -89,6 +89,7 @@ class DataManager:
                 "d": self.store
                }
         self.store = []
+        """
         try:
             with open(STOREFILE, 'r') as f:
                 store = json.load(f)
@@ -101,6 +102,7 @@ class DataManager:
                 json.dump(store, f)
         except:
             logging.warning('%s sendValue. Could not open %s for write', ModuleName, STOREFILE)
+        """
         msg = {
                "source": self.aid,
                "destination": config["cid"],
@@ -110,6 +112,8 @@ class DataManager:
         self.sendMessage(msg, "conc")
 
     def processAck(self, ack):
+        pass
+        """
         self.endToEnd = True
         try:
             with open(STOREFILE, 'r') as f:
@@ -124,6 +128,7 @@ class DataManager:
                 json.dump(store, f)
         except:
             logging.warning('%s storeValue. Could not write store to file', ModuleName)
+         """
 
     def storeValues(self, values):
         self.store.append(values)
@@ -236,8 +241,9 @@ class App(CbApp):
                 newConfig = json.load(configFile)
                 logging.info('%s Read canary_app.config', ModuleName)
                 config.update(newConfig)
-        except:
+        except Exception as inst:
             logging.warning('%s canary_app.config does not exist or file is corrupt', ModuleName)
+            logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
         for c in config:
             if c.lower in ("true", "t", "1"):
                 config[c] = True
