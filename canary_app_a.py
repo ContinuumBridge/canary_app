@@ -23,19 +23,19 @@ STOREFILE                = CB_CONFIG_DIR + "canary_app.store"
 
 # Default values:
 config = {
-    'temperature': 'True',
-    'temp_min_change': 0.2,
-    'humidity': 'True',
-    'humidity_min_change': 0.2,
-    'binary': 'True',
-    'buttons': 'True',
-    'luminance': 'True',
-    'luminance_min_change': 1.0,
-    'battery': 'True',
-    'battery_min_change': 1.0,
-    'connected': 'True',
-    'slow_polling_interval': 600.0,
-    'cid': 'CID52'
+    "temperature": "True",
+    "temp_min_change": 0.2,
+    "humidity": "True",
+    "humidity_min_change": 0.2,
+    "binary": "True",
+    "buttons": "True",
+    "luminance": "True",
+    "luminance_min_change": 1.0,
+    "battery": "True",
+    "battery_min_change": 1.0,
+    "connected": "True",
+    "slow_polling_interval": 600.0,
+    "cid": "CID52"
 }
 
 def state2int(s):
@@ -141,7 +141,7 @@ class TemperatureMeasure():
     def __init__(self, id):
         self.id = id
         epochTime = time.time()
-        self.prevTemp = -100
+        self.prevTemp = -100.0
 
     def process(self, message):
         timeStamp = int(message["timeStamp"])
@@ -259,6 +259,8 @@ class App(CbApp):
         self.connected = []
         self.devices = []
         self.idToName = {} 
+        self.switchTimes = []
+        self.boilerID = "unknown"
         #CbApp.__init__ MUST be called
         CbApp.__init__(self, argv)
 
@@ -273,6 +275,23 @@ class App(CbApp):
                "state": self.state}
         self.sendManagerMessage(msg)
 
+    def switchBoiler(self):
+        logging.debug("%s switchBoiler", ModuleName)
+        if self.switchTimes != []:
+            for s in self.switchTimes:
+                t = s.keys()[0]
+                if t > time.time():
+                    command = {"id": self.id,
+                               "request": "command"}
+                    if switch(s[t]) == 1:
+                        command["data"] = "on"
+                    else:
+                        command["data"] = "off"
+                    logging.debug("%s switchBoiler, command: %s", ModuleName, str(command))
+                    if self.boilerID != "unknown":
+                        self.sendMessage(command, self.boilerID)
+                    else:
+                        logging.warning("%s switchBoiler, Attempting to switch unconnected boiler", ModuleName)
 
     def onConcMessage(self, msg):
         logging.debug("%s message from conc: %s", ModuleName, msg)
@@ -283,21 +302,7 @@ class App(CbApp):
         elif "body" in msg:
             # If we receive a switch command, write it to the switch file
             if "s" in msg["body"] and "at" in msg["body"]:
-                try:
-                    with open(switchFile, 'r') as f:
-                        switchTimes = json.load(f)
-                except:
-                    switchTimes = []
-                try:
-                    switchTimes.append({msg["body"]["s"]: msg["body"]["at"]})
-                except Exception as inst:
-                    logging.warning("%s Unexpected message body: %s", ModuleName, msg)
-                    logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
-                try:
-                    with open(switchFile, 'w') as f:
-                        json.dump(switchTimes, f)
-                except:
-                    logging.warning('%s onConcMessage. Could not write switchTimes to file', ModuleName)
+                self.switchTimes.append({msg["body"]["s"]: msg["body"]["at"]})
             try: 
                 if "a" in msg["body"]:
                     self.dm.processAck(msg["body"]["a"])
@@ -396,6 +401,10 @@ class App(CbApp):
                     self.luminance[-1].dm = self.dm
                     serviceReq.append({"characteristic": "luminance",
                                        "interval": 0})
+            elif p["characteristic"] == "switch":
+                self.boilerID = message["id"]
+                serviceReq.append({"characteristic": "switch", 
+                                   "interval": 0})
         msg = {"id": self.id,
                "request": "service",
                "service": serviceReq}
