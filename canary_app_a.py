@@ -261,6 +261,7 @@ class App(CbApp):
         self.idToName = {} 
         self.switchTimes = []
         self.boilerID = "unknown"
+        reactor.callLater(30, self.switchBoiler)
         #CbApp.__init__ MUST be called
         CbApp.__init__(self, argv)
 
@@ -276,14 +277,15 @@ class App(CbApp):
         self.sendManagerMessage(msg)
 
     def switchBoiler(self):
-        logging.debug("%s switchBoiler", ModuleName)
+        #logging.debug("%s switchBoiler, switchTimes: %s", ModuleName, str(self.switchTimes))
         if self.switchTimes != []:
+            dones = []
             for s in self.switchTimes:
-                t = s.keys()[0]
-                if t > time.time():
+                if time.time() > s["at"]:
+                    #logging.debug("%s switchBoiler, t: %s, time: %s", ModuleName, str(s["at"]), str(time.time()))
                     command = {"id": self.id,
                                "request": "command"}
-                    if switch(s[t]) == 1:
+                    if s["s"] == 1:
                         command["data"] = "on"
                     else:
                         command["data"] = "off"
@@ -292,23 +294,33 @@ class App(CbApp):
                         self.sendMessage(command, self.boilerID)
                     else:
                         logging.warning("%s switchBoiler, Attempting to switch unconnected boiler", ModuleName)
+                    dones.append(s["at"])
+                    logging.debug("%s switchBoiler, dones: %s", ModuleName, str(dones))
+            self.switchTimes = [s for s in self.switchTimes if s["at"] not in dones]
+        reactor.callLater(5, self.switchBoiler)
 
     def onConcMessage(self, msg):
-        logging.debug("%s message from conc: %s", ModuleName, msg)
+        #logging.debug("%s message from conc: %s", ModuleName, msg)
         if "resp" in msg:
             self.concConnected = True
             if self.bridgeConnected:
                 self.dm.manageConnect(True)
         elif "body" in msg:
             # If we receive a switch command, write it to the switch file
-            if "s" in msg["body"] and "at" in msg["body"]:
-                self.switchTimes.append({msg["body"]["s"]: msg["body"]["at"]})
+            try: 
+                for b in msg["body"]["d"]:
+                    logging.debug("%s onConcMessage. b: %s", ModuleName, b)
+                    if "s" in b and "at" in b:
+                        self.switchTimes.append(b)
+            except Exception as ex:
+                logging.warning("%s Unexpected message body: %s", ModuleName, msg)
+                logging.warning("%s Exception: %s %s", ModuleName, type(ex), str(ex.args))
             try: 
                 if "a" in msg["body"]:
                     self.dm.processAck(msg["body"]["a"])
-            except Exception as inst:
+            except Exception as ex:
                 logging.warning("%s Unexpected message body: %s", ModuleName, msg)
-                logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
+                logging.warning("%s Exception: %s %s", ModuleName, type(ex), str(ex.args))
         else: 
             logging.debug('%s onConcMessage. No body in message: %s', ModuleName, msg)
 
