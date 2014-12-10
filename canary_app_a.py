@@ -35,7 +35,7 @@ config = {
     "battery_min_change": 1.0,
     "connected": "True",
     "slow_polling_interval": 600.0,
-    "cid": "CID52"
+    "cid": "CID63"
 }
 
 def state2int(s):
