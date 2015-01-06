@@ -18,6 +18,7 @@ import json
 from twisted.internet import reactor
 
 SEND_DELAY               = 10  # Time to gather values before sending them
+CONNECT_SEND_INTERVAL    = 10800  # 3 hours
 SEQFILE                  = CB_CONFIG_DIR + "canary_app.seq"
 STOREFILE                = CB_CONFIG_DIR + "canary_app.store"
 
@@ -216,6 +217,7 @@ class Connected():
     def __init__(self, id):
         self.id = id
         self.previous = 0
+        self.lastSent = 0
 
     def process(self, resp):
         v = resp["data"]
@@ -224,9 +226,10 @@ class Connected():
             b = 1
         else:
             b = 0
-        if b != self.previous:
+        if b != self.previous or timeStamp - self.lastSent > CONNECT_SEND_INTERVAL:
             self.dm.storeValues({"i": self.id, "c":b, "s":timeStamp})
             self.previous = b
+            self.lastSent = timeStamp
 
 class App(CbApp):
     def __init__(self, argv):
