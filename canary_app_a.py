@@ -332,7 +332,7 @@ class App(CbApp):
         This method is called in a thread by cbcommslib so it will not cause
         problems if it takes some time to complete (other than to itself).
         """
-        #logging.debug("%s onadaptorData, message: %s", ModuleName, message)
+        logging.debug("%s onadaptorData, message: %s", ModuleName, message)
         if message["characteristic"] == "temperature":
             for t in self.temp:
                 if t.id == self.idToName[message["id"]]:
