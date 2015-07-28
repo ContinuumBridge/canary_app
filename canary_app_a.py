@@ -10,7 +10,6 @@ ModuleName = "canary_app"
 import sys
 import os
 import time
-import logging
 from cbcommslib import CbApp
 from cbconfig import *
 import requests
@@ -35,7 +34,9 @@ config = {
     "battery": "True",
     "battery_min_change": 1.0,
     "connected": "True",
-    "slow_polling_interval": 600.0,
+    "temperature_interval": 600.0,
+    "humidity_interval": 1800.0,
+    "luminance_interval": 1800.0,
     "cid": "CID63"
 }
 
@@ -65,7 +66,7 @@ class DataManager:
                     self.seq += 1
             except:
                 self.seq = 0
-                logging.warning('%s getseq. Could not open SEQFILE', ModuleName)
+                self.cbLog("warning", "getseq. Could not open SEQFILE")
         with open(SEQFILE, 'w') as f:
             f.write(str(self.seq))
         return self.seq
@@ -79,7 +80,7 @@ class DataManager:
                    "body": {"n":self.getseq()} 
                   }
             self.sendMessage(msg, "conc")
-            logging.debug('%s sendValues. Sending: %s', ModuleName, msg)
+            self.cbLog("debug", "manageConnect. Sending " + str(json.dumps(msg, indent=4)))
         else:
             self.endToEnd = False
 
@@ -109,7 +110,7 @@ class DataManager:
                "destination": config["cid"],
                "body": body,
               }
-        logging.debug('%s sendValues. Sending: %s', ModuleName, msg)
+        self.cbLog("debug", "sendValues. Sending " + str(json.dumps(msg, indent=4)))
         self.sendMessage(msg, "conc")
 
     def processAck(self, ack):
@@ -183,10 +184,8 @@ class Buttons():
 
     def process(self, message):
         timeStamp = int(message["timeStamp"])
-        #logging.debug('%s buttons data: %s', ModuleName, message["data"])
         for key, value in message["data"].iteritems():
             val = state2int(value)
-            #logging.debug('%s buttons key: %s, val: %s %s', ModuleName, key, value, str(val))
             self.dm.storeValues({"i": self.id, ('b'+key):val, "s":timeStamp})
 
 class Luminance():
@@ -233,26 +232,9 @@ class Connected():
 
 class App(CbApp):
     def __init__(self, argv):
-        logging.basicConfig(filename=CB_LOGFILE,level=CB_LOGGING_LEVEL,format='%(asctime)s %(message)s')
         self.state = "stopped"
         self.concConnected = False
         self.bridgeConnected = False
-        configFile = CB_CONFIG_DIR + "canary_app.config"
-        global config
-        try:
-            with open(configFile, 'r') as configFile:
-                newConfig = json.load(configFile)
-                logging.info('%s Read canary_app.config', ModuleName)
-                config.update(newConfig)
-        except Exception as inst:
-            logging.warning('%s canary_app.config does not exist or file is corrupt', ModuleName)
-            logging.warning("%s Exception: %s %s", ModuleName, type(inst), str(inst.args))
-        for c in config:
-            if c.lower in ("true", "t", "1"):
-                config[c] = True
-            elif c.lower in ("false", "f", "0"):
-                config[c] = False
-        logging.debug('%s Config: %s', ModuleName, config)
         self.temp = []
         self.humidity = []
         self.binary = []
@@ -273,37 +255,33 @@ class App(CbApp):
             self.state = "running"
         else:
             self.state = action
-        logging.debug("%s state: %s", ModuleName, self.state)
         msg = {"id": self.id,
                "status": "state",
                "state": self.state}
         self.sendManagerMessage(msg)
 
     def switchBoiler(self):
-        #logging.debug("%s switchBoiler, switchTimes: %s", ModuleName, str(self.switchTimes))
         if self.switchTimes != []:
             dones = []
             for s in self.switchTimes:
                 if time.time() > s["at"]:
-                    #logging.debug("%s switchBoiler, t: %s, time: %s", ModuleName, str(s["at"]), str(time.time()))
                     command = {"id": self.id,
                                "request": "command"}
                     if s["s"] == 1:
                         command["data"] = "on"
                     else:
                         command["data"] = "off"
-                    logging.debug("%s switchBoiler, command: %s", ModuleName, str(command))
+                    self.cbLog("debug", "switchBoiler, command: " + str(command))
                     if self.boilerID != "unknown":
                         self.sendMessage(command, self.boilerID)
                     else:
-                        logging.warning("%s switchBoiler, Attempting to switch unconnected boiler", ModuleName)
+                        self.cbLog("warning", "switchBoiler, Attempting to switch unconnected boiler")
                     dones.append(s["at"])
-                    logging.debug("%s switchBoiler, dones: %s", ModuleName, str(dones))
             self.switchTimes = [s for s in self.switchTimes if s["at"] not in dones]
         reactor.callLater(5, self.switchBoiler)
 
     def onConcMessage(self, msg):
-        #logging.debug("%s message from conc: %s", ModuleName, msg)
+        self.cbLog("debug", "onConcMessage, message: " + str(json.dumps(msg, indent=4)))
         if "resp" in msg:
             self.concConnected = True
             if self.bridgeConnected:
@@ -312,27 +290,25 @@ class App(CbApp):
             # If we receive a switch command, write it to the switch file
             try: 
                 for b in msg["body"]["d"]:
-                    logging.debug("%s onConcMessage. b: %s", ModuleName, b)
+                    self.cbLog("debug", "onConcMessage. b: " + str( b))
                     if "s" in b and "at" in b:
                         self.switchTimes.append(b)
             except Exception as ex:
-                logging.warning("%s Unexpected message body: %s", ModuleName, msg)
-                logging.warning("%s Exception: %s %s", ModuleName, type(ex), str(ex.args))
+                self.cbLog("warning", "Unexpected message body processing d. Exception: " + str(type(ex)) + ", " + str(ex.args))
             try: 
                 if "a" in msg["body"]:
                     self.dm.processAck(msg["body"]["a"])
             except Exception as ex:
-                logging.warning("%s Unexpected message body: %s", ModuleName, msg)
-                logging.warning("%s Exception: %s %s", ModuleName, type(ex), str(ex.args))
+                self.cbLog("warning", "Unexpected message body processing a. Exception: " + str(type(ex)) + ", " + str(ex.args))
         else: 
-            logging.debug('%s onConcMessage. No body in message: %s', ModuleName, msg)
+            self.cbLog("warning", "onConcMessage, No body in message: " + str(json.dumps(msg, indent=4)))
 
     def onAdaptorData(self, message):
         """
         This method is called in a thread by cbcommslib so it will not cause
         problems if it takes some time to complete (other than to itself).
         """
-        logging.debug("%s onadaptorData, message: %s", ModuleName, message)
+        self.cbLog("debug", "onAdaptorData, message: " + str(json.dumps(message, indent=4)))
         if message["characteristic"] == "temperature":
             for t in self.temp:
                 if t.id == self.idToName[message["id"]]:
@@ -370,7 +346,7 @@ class App(CbApp):
                     break
 
     def onAdaptorService(self, message):
-        logging.debug("%s onAdaptorService, message: %s", ModuleName, message)
+        self.cbLog("debug", "onAdaptorService, message: " + str(json.dumps(message, indent=4)))
         serviceReq = []
         for p in message["service"]:
             # Based on services offered & whether we want to enable them
@@ -379,13 +355,13 @@ class App(CbApp):
                     self.temp.append(TemperatureMeasure((self.idToName[message["id"]])))
                     self.temp[-1].dm = self.dm
                     serviceReq.append({"characteristic": "temperature",
-                                       "interval": config["slow_polling_interval"]})
+                                       "interval": config["temperature_interval"]})
             elif p["characteristic"] == "humidity":
                 if config["humidity"] == 'True':
                     self.humidity.append(Humid(self.idToName[message["id"]]))
                     self.humidity[-1].dm = self.dm
                     serviceReq.append({"characteristic": "humidity",
-                                       "interval": config["slow_polling_interval"]})
+                                       "interval": config["humidity_interval"]})
             elif p["characteristic"] == "binary_sensor":
                 if config["binary"] == 'True':
                     self.binary.append(Binary(self.idToName[message["id"]]))
@@ -415,7 +391,7 @@ class App(CbApp):
                     self.luminance.append(Luminance(self.idToName[message["id"]]))
                     self.luminance[-1].dm = self.dm
                     serviceReq.append({"characteristic": "luminance",
-                                       "interval": 0})
+                                       "interval": config["luminance_interval"]})
             elif p["characteristic"] == "switch":
                 self.boilerID = message["id"]
                 serviceReq.append({"characteristic": "switch", 
@@ -426,19 +402,35 @@ class App(CbApp):
         self.sendMessage(msg, message["id"])
         self.setState("running")
 
-    def onConfigureMessage(self, config):
+    def onConfigureMessage(self, configMessage):
         """ Config is based on what sensors are available """
-        for adaptor in config["adaptors"]:
+        for adaptor in configMessage["adaptors"]:
             adtID = adaptor["id"]
             if adtID not in self.devices:
                 # Because configure may be re-called if devices are added
                 name = adaptor["name"]
                 friendly_name = adaptor["friendly_name"]
-                logging.debug("%s Configure app. Adaptor name: %s", ModuleName, name)
+                self.cbLog("debug", "Configure app. Adaptor name: " + name)
                 self.idToName[adtID] = friendly_name.replace(" ", "_")
                 self.devices.append(adtID)
         self.dm = DataManager(self.id)
         self.dm.sendMessage = self.sendMessage
+        self.dm.cbLog = self.cbLog
+        configFile = CB_CONFIG_DIR + "canary_app.config"
+        global config
+        try:
+            with open(configFile, 'r') as configFile:
+                newConfig = json.load(configFile)
+                self.cbLog("info", "Read canary_app.config")
+                config.update(newConfig)
+        except Exception as ex:
+            self.cbLog("warning", "canary_app.config does not exist or file is corrupt. Exception: " + str(type(ex)) + ", " +  str(ex.args))
+        for c in config:
+            if c.lower in ("true", "t", "1"):
+                config[c] = True
+            elif c.lower in ("false", "f", "0"):
+                config[c] = False
+        self.cbLog("debug", "Config: " + str(json.dumps(config, indent=4)))
         self.setState("starting")
 
     def onManagerStatus(self, connected):
