@@ -16,10 +16,8 @@ import requests
 import json
 from twisted.internet import reactor
 
-SEND_DELAY               = 10  # Time to gather values before sending them
+SEND_DELAY               = 5      # Time to gather values before sending them
 CONNECT_SEND_INTERVAL    = 10800  # 3 hours
-SEQFILE                  = CB_CONFIG_DIR + "canary_app.seq"
-STOREFILE                = CB_CONFIG_DIR + "canary_app.store"
 
 # Default values:
 config = {
@@ -60,15 +58,7 @@ class DataManager:
         if init:
             self.seq = 0
         else:
-            try:
-                with open(SEQFILE, 'r') as f:
-                    self.seq = int(f.read())
-                    self.seq += 1
-            except:
-                self.seq = 0
-                self.cbLog("warning", "getseq. Could not open SEQFILE")
-        with open(SEQFILE, 'w') as f:
-            f.write(str(self.seq))
+            self.seq += 1
         return self.seq
 
     def manageConnect(self, connected):
@@ -91,20 +81,6 @@ class DataManager:
                 "d": self.store
                }
         self.store = []
-        """
-        try:
-            with open(STOREFILE, 'r') as f:
-                store = json.load(f)
-        except:
-            store = []
-            logging.debug('%s sendValue. Could not open %s for read', ModuleName, STOREFILE)
-        store.append(body)
-        try:
-            with open(STOREFILE, 'w') as f:
-                json.dump(store, f)
-        except:
-            logging.warning('%s sendValue. Could not open %s for write', ModuleName, STOREFILE)
-        """
         msg = {
                "source": self.aid,
                "destination": config["cid"],
@@ -115,22 +91,6 @@ class DataManager:
 
     def processAck(self, ack):
         pass
-        """
-        self.endToEnd = True
-        try:
-            with open(STOREFILE, 'r') as f:
-                store = json.load(f)
-        except:
-            logging.warning('%s processAck. Could not open store file', ModuleName)
-        for s in store:
-            if s["s"] < self.seq:
-                store.remove(s)
-        try:
-            with open(STOREfILE, 'w') as f:
-                json.dump(store, f)
-        except:
-            logging.warning('%s storeValue. Could not write store to file', ModuleName)
-         """
 
     def storeValues(self, values):
         self.store.append(values)
