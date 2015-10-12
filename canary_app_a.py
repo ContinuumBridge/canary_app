@@ -108,7 +108,6 @@ class TemperatureMeasure():
     def process(self, message):
         timeStamp = int(message["timeStamp"])
         temp = message["data"]
-        self.cbLog("debug", "process temperature, data: " + temp)
         if abs(temp-self.prevTemp) >= config["temp_min_change"]:
             self.prevTemp = temp
             self.dm.storeValues({"i": self.id, "t":temp, "s":timeStamp})
@@ -134,7 +133,6 @@ class Binary():
     def process(self, message):
         timeStamp = int(message["timeStamp"])
         b = message["data"]
-        self.cbLog("debug", "process Binary, data: " + b)
         bi = state2int(b)
         if bi != self.previous:
             self.dm.storeValues({"i": self.id, "b":bi, "s":timeStamp})
@@ -316,7 +314,6 @@ class App(CbApp):
                 if config["temperature"] == 'True':
                     self.temp.append(TemperatureMeasure((self.idToName[message["id"]])))
                     self.temp[-1].dm = self.dm
-                    self.temp[-1].cbLog = self.cbLog
                     serviceReq.append({"characteristic": "temperature",
                                        "interval": config["temperature_interval"]})
             elif p["characteristic"] == "humidity":
@@ -329,7 +326,6 @@ class App(CbApp):
                 if config["binary"] == 'True':
                     self.binary.append(Binary(self.idToName[message["id"]]))
                     self.binary[-1].dm = self.dm
-                    self.binary[-1].cbLog = self.cbLog
                     serviceReq.append({"characteristic": "binary_sensor",
                                        "interval": 0})
             elif p["characteristic"] == "number_buttons":
@@ -398,6 +394,7 @@ class App(CbApp):
         self.setState("starting")
 
     def onManagerStatus(self, connected):
+        self.cbLog("debug", "onManagerStatus, connected: " + str(self.connected) + ", concConnected: " + str(self.concConnected))
         self.bridgeConnected = connected
         if connected:
             if self.concConnected:
