@@ -316,6 +316,7 @@ class App(CbApp):
                 if config["temperature"] == 'True':
                     self.temp.append(TemperatureMeasure((self.idToName[message["id"]])))
                     self.temp[-1].dm = self.dm
+                    self.temp[-1].cbLog = self.cbLog
                     serviceReq.append({"characteristic": "temperature",
                                        "interval": config["temperature_interval"]})
             elif p["characteristic"] == "humidity":
@@ -328,6 +329,7 @@ class App(CbApp):
                 if config["binary"] == 'True':
                     self.binary.append(Binary(self.idToName[message["id"]]))
                     self.binary[-1].dm = self.dm
+                    self.binary[-1].cbLog = self.cbLog
                     serviceReq.append({"characteristic": "binary_sensor",
                                        "interval": 0})
             elif p["characteristic"] == "number_buttons":
