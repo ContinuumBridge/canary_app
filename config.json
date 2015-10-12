@@ -1,9 +1,9 @@
 {
     "exe": "canary_app.py", 
     "description": "Canary heating control app", 
-    "url": "https://github.com/ContinuumBridge/canary_app/archive/v1.2.0.tar.gz", 
+    "url": "https://github.com/ContinuumBridge/canary_app/archive/v1.2.1.tar.gz", 
     "app_resource": "/api/bridge/v1/app/12", 
-    "version": "1.2.0", 
+    "version": "1.2.1", 
     "provider": "ContinuumBridge", 
     "name": "Canary App"
 }

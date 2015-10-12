@@ -108,6 +108,7 @@ class TemperatureMeasure():
     def process(self, message):
         timeStamp = int(message["timeStamp"])
         temp = message["data"]
+        self.cbLog("debug", "process temperature, data: " + temp)
         if abs(temp-self.prevTemp) >= config["temp_min_change"]:
             self.prevTemp = temp
             self.dm.storeValues({"i": self.id, "t":temp, "s":timeStamp})
@@ -133,6 +134,7 @@ class Binary():
     def process(self, message):
         timeStamp = int(message["timeStamp"])
         b = message["data"]
+        self.cbLog("debug", "process Binary, data: " + b)
         bi = state2int(b)
         if bi != self.previous:
             self.dm.storeValues({"i": self.id, "b":bi, "s":timeStamp})
